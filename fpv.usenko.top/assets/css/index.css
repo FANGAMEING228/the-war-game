@@ -1,0 +1,242 @@
+/* STREAMING_CHUNK: Resetting default styles and applying fonts... */
+
+*{
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+/* Використовуємо новий OSD шрифт глобально */
+font-family: 'Share Tech Mono', 'Courier New', Courier, monospace;
+}
+
+body {
+overflow: hidden;
+background-color: #000;
+}
+
+/* STREAMING_CHUNK: Sizing the main game canvases... /
+/ Задаємо 100% розмір тільки для ігрових canvas, щоб не зламати canvas стіків */
+#threeCanvas, #interface {
+display: block;
+width: 100vw;
+height: 100vh;
+position: absolute;
+top: 0;
+left: 0;
+}
+
+#threeCanvas {
+z-index: 1;
+}
+
+#interface {
+pointer-events: none;
+z-index: 10;
+}
+.leaflet-control-attribution{
+    display: none;
+}
+
+
+.gamepad-info {
+position: fixed;
+bottom: 5px;
+left: 50%;
+transform: translateX(-50%);
+
+padding: 5px 5px;
+border-radius: 10px;
+z-index: 15;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 10px;
+pointer-events: none; / Щоб кліки проходили крізь нього на гру */
+}
+
+.gamepad-info p#info {
+max-width: 400px;
+text-align: center;
+font-size: 16px;
+color: white;
+text-shadow: 1px 1px 3px black; /* Тінь для кращої читабельності */
+}
+
+/* Додатково страхуємо canvas стіків від розтягування */
+.gamepad-info canvas {
+display: block;
+width: 300px;
+height: 150px;
+}
+
+/* STREAMING_CHUNK: Start screen overlay (AAA) */
+.overlay {
+position: fixed;
+top: 0;
+left: 0;
+width: 100vw;
+height: 100vh;
+background:
+  radial-gradient(ellipse 90% 70% at 50% 35%, rgba(18,24,16,0.5) 0%, rgba(0,0,0,0.9) 75%),
+  rgba(0, 0, 0, 0.88);
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+z-index: 100;
+color: white;
+text-align: center;
+}
+
+.overlay h1 {
+font-size: 56px;
+margin-bottom: 10px;
+color: #fbcf18;
+letter-spacing: 2px;
+}
+
+.overlay p {
+font-size: 18px;
+margin-bottom: 40px;
+color: #ccc;
+}
+
+/* Fallback start button (menu.js adds .menu-cta) */
+#startBtn {
+padding: 15px 40px;
+font-size: 26px;
+font-weight: bold;
+color: #111;
+background-color: #fbcf18;
+border: none;
+border-radius: 8px;
+cursor: pointer;
+transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+font-family: inherit;
+box-shadow: 0 4px 15px #fbcf18;
+}
+
+#startBtn:hover {
+background-color: #fbcf18;
+transform: scale(1.05);
+box-shadow: 0 6px 20px #fbcf18;
+}
+
+#startBtn:active {
+transform: scale(0.95);
+box-shadow: 0 2px 10px #fbcf18;
+}
+
+/* Menu / loading */
+.menu-screen {
+display: flex;
+flex-direction: column;
+align-items: center;
+max-width: 720px;
+padding: 0 20px;
+position: relative;
+}
+
+.menu-subtitle {
+color: rgba(255,255,255,0.55);
+font-size: 14px;
+letter-spacing: 0.12em;
+margin-bottom: 8px;
+animation: menuPulse 1.8s ease-in-out infinite;
+}
+
+.menu-error {
+color: #ff5555;
+font-size: 36px;
+text-shadow: 0 0 20px rgba(255,60,60,0.5);
+letter-spacing: 0.15em;
+margin-bottom: 12px;
+}
+
+@keyframes menuPulse {
+0%, 100% { opacity: 0.4; }
+50% { opacity: 1; }
+}
+
+.loading-bar {
+width: min(320px, 70vw);
+height: 3px;
+background: rgba(255,255,255,0.1);
+border-radius: 2px;
+overflow: hidden;
+border: none;
+margin: 8px 0 12px;
+}
+
+.loading-bar-fill {
+height: 100%;
+background: linear-gradient(90deg, #d4a80a, #fbcf18, #ffe566);
+box-shadow: 0 0 12px rgba(251,207,24,0.6);
+transition: width 0.4s ease-out;
+}
+
+.controls-legend {
+display: flex;
+flex-wrap: wrap;
+gap: 30px;
+justify-content: center;
+text-align: left;
+background: rgba(255, 255, 255, 0.04);
+border: 1px solid #fbcf1855;
+border-radius: 10px;
+padding: 18px 24px;
+margin-top: 10px;
+}
+
+.controls-col h3 {
+color: #fbcf18;
+font-size: 15px;
+margin-bottom: 8px;
+letter-spacing: 1px;
+}
+
+.controls-col ul {
+list-style: none;
+}
+
+.controls-col li {
+color: #ddd;
+font-size: 13px;
+line-height: 1.6;
+max-width: 320px;
+}
+
+.controls-col b {
+color: #fbcf18;
+}
+
+/* Location selector buttons */
+.calib-btn {
+    background: #222;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 6px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 16px;
+    transition: all 0.2s;
+}
+
+.calib-btn.primary {
+    border-color: #fbcf18;
+    color: #fbcf18;
+    font-weight: bold;
+}
+
+.calib-btn.primary:hover {
+    background: #fbcf18;
+    color: #111;
+}
+
+.calib-btn.danger:hover {
+    background: #d9534f;
+    color: white;
+}
+
+/* Settings / builder / auth layout — керує menu.js (ensureSettingsPanelStyle).
+   Старі fixed-правила прибрані, щоб не конфліктували з мобільним стеком. */

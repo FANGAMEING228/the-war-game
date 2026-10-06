@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="ua">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <link rel="icon" type="image/png" href="assets/images/logo.png">
+    <link rel="stylesheet" href="assets/css/index.css">
+    <script src="ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+          }
+        }
+    </script>
+    <title>FPV SIM UKRAINE</title>
+
+    <!-- Додаємо OSD шрифт -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <!-- Open Graph / Meta Tags for Social Sharing -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="FPV SIM UKRAINE — Web-Based FPV Drone Simulator">
+    <meta name="twitter:description" content="Fly FPV drones right in your browser. No install needed. Made by Ukrainian developers.">
+    <meta name="twitter:image" content="/assets/images/logo.png">
+</head>
+<body>
+    <div id="startScreen" class="overlay">
+        <div class="menu-screen">
+            <h2 class="menu-subtitle">Завантаження...</h2>
+            <div class="loading-bar"><div class="loading-bar-fill" style="width:5%"></div></div>
+        </div>
+    </div>
+
+    <canvas id="threeCanvas"></canvas>
+    <canvas id="interface"></canvas>
+
+    <div class="gamepad-info">
+        <p id="info">Очікуєм підключення контроллера...</p>
+        <canvas id="canvas" width="300" height="150"></canvas>
+    </div>
+
+    <script src="src/engine.js" type="module"></script>
+    <script src="src/gamepad.js" type="module"></script>
+    <script src="src/auth.js" type="module"></script>
+</body>
+</html>
