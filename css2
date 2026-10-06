@@ -1,0 +1,7 @@
+﻿@font-face {
+  font-family: 'Share Tech Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(s/sharetechmono/v16/J7aHnp1uDWRBEqV98dVQztYldFc7pA.ttf) format('truetype');
+}
