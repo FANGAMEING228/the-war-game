@@ -172,8 +172,66 @@ button{font-family:var(--mono);cursor:pointer}
 </head>
 <body>
 <canvas id="gl"></canvas>
+<noscript><div style="position:fixed;inset:0;background:#101109;color:#d99a2b;display:flex;align-items:center;justify-content:center;font-family:monospace;letter-spacing:.2em">ENABLE JAVASCRIPT TO RUN THE WAR</div></noscript>
 
-<!-- ============ HUD ============ -->
+<!-- ============ BOOT (the ONLY markup the game needs in HTML) ============ -->
+<div id="boot" class="screen">
+  <div class="bootbox">
+    <h1>THE <b>WAR</b></h1>
+    <div class="bootbar"><i id="bootfill"></i></div>
+    <p id="bootmsg">INITIALIZING COMBAT SYSTEMS</p>
+  </div>
+</div>
+
+<!-- watchdog: never allow a silent infinite load -->
+<script>
+setTimeout(function(){
+  if(!window.__THEWAR_STATE__){
+    var m=document.getElementById('bootmsg');
+    if(m){m.textContent='STILL LOADING — SLOW OR BLOCKED CDN, TRYING MIRRORS…';m.style.color='#d99a2b';}
+  }
+},18000);
+</script>
+
+<script type="module">
+/* =========================================================
+   THE WAR — single-file build 2.2
+   The script BUILDS ITS OWN INTERFACE at startup. The HTML
+   only has to provide #gl and the boot screen — a mangled,
+   merged or stripped index.html can no longer crash boot.
+   ========================================================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function genCode(){const c='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.random()*c.length|0];return s}
+
+/* ---------- boot UI + fail-safe ---------- */
+function bootStep(pct,msg){const f=$('#bootfill'),m=$('#bootmsg');if(f)f.style.width=pct+'%';if(msg&&m)m.textContent=msg}
+function bootFail(msg){
+  if(window.__THEWAR_STATE__)return;
+  window.__THEWAR_STATE__='fail';
+  bootStep(100,'');
+  const f=$('#bootfill');if(f)f.style.background='#b23c2e';
+  const m=$('#bootmsg');
+  if(m){m.textContent=msg;m.style.color='#b23c2e';m.style.letterSpacing='.12em'}
+  const host=document.querySelector('.bootbox')||document.body;
+  const b=document.createElement('button');
+  b.className='btn';b.textContent='RETRY';b.style.marginTop='20px';
+  b.onclick=()=>location.reload();
+  host.appendChild(b);
+}
+addEventListener('error',e=>{if(!window.__THEWAR_STATE__)bootFail('ERROR: '+(e.message||'unknown'))});
+addEventListener('unhandledrejection',e=>{if(!window.__THEWAR_STATE__)bootFail('ERROR: '+((e.reason&&e.reason.message)||'rejected promise'))});
+function withTimeout(p,ms,label){
+  return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout '+label)),ms))]);
+}
+
+/* =========================================================
+   UI SHELL — single source of truth for every screen.
+   Injected at startup so the script never depends on the
+   state of the surrounding HTML file.
+   ========================================================= */
+const SHELL=`
 <div id="hud" class="hidden">
   <canvas id="compass" width="520" height="46"></canvas>
   <div id="objective">HOSTILES 0 / 50</div>
@@ -194,30 +252,10 @@ button{font-family:var(--mono);cursor:pointer}
   <div id="nettag"></div>
 </div>
 
-<!-- ============ BOOT ============ -->
-<div id="boot" class="screen">
-  <div class="bootbox">
-    <h1>THE <b>WAR</b></h1>
-    <div class="bootbar"><i id="bootfill"></i></div>
-    <p id="bootmsg">INITIALIZING COMBAT SYSTEMS</p>
-  </div>
-</div>
-
-<!-- watchdog: never allow a silent infinite load -->
-<script>
-setTimeout(function(){
-  if(!window.__THEWAR_STATE__){
-    var m=document.getElementById('bootmsg');
-    if(m){m.textContent='STILL LOADING — SLOW OR BLOCKED CDN, TRYING MIRRORS…';m.style.color='#d99a2b';}
-  }
-},18000);
-</script>
-
-<!-- ============ MAIN MENU ============ -->
 <div id="main" class="screen overlay hidden">
   <header class="masthead">
     <h1>THE <b>WAR</b></h1>
-    <div class="mastmeta">GROUND COMBAT SIM // BUILD 2.1 <em>// BOMBER MODE REMOVED</em></div>
+    <div class="mastmeta">GROUND COMBAT SIM // BUILD 2.2 <em>// BOMBER MODE REMOVED</em></div>
   </header>
   <div class="menucols">
     <nav class="modenav" id="modenav">
@@ -249,7 +287,6 @@ setTimeout(function(){
   </footer>
 </div>
 
-<!-- ============ LOADOUT ============ -->
 <div id="loadout" class="screen overlay hidden">
   <div class="subhead"><button class="backbtn" data-back="main">&larr; BACK</button><h1>LOADOUT</h1></div>
   <div class="subbody"><div class="loadcols">
@@ -258,7 +295,6 @@ setTimeout(function(){
   </div></div>
 </div>
 
-<!-- ============ SETTINGS ============ -->
 <div id="settings" class="screen overlay hidden">
   <div class="subhead"><button class="backbtn" id="setback">&larr; BACK</button><h1>SETTINGS<span id="customtag"></span></h1></div>
   <div class="subbody"><div class="setgrid">
@@ -293,7 +329,6 @@ setTimeout(function(){
   </div></div>
 </div>
 
-<!-- ============ MULTIPLAYER ============ -->
 <div id="mpscreen" class="screen overlay hidden">
   <div class="subhead"><button class="backbtn" data-back="main">&larr; BACK</button><h1>MULTIPLAYER · P2P</h1></div>
   <div class="subbody"><div class="mpcols">
@@ -320,7 +355,6 @@ setTimeout(function(){
   </div></div>
 </div>
 
-<!-- ============ PAUSE ============ -->
 <div id="pause" class="screen overlay hidden">
   <div class="centercol">
     <h1>PAUSED</h1>
@@ -333,7 +367,6 @@ setTimeout(function(){
   </div>
 </div>
 
-<!-- ============ END ============ -->
 <div id="end" class="screen overlay hidden">
   <div class="centercol">
     <h1 id="endtitle">MISSION COMPLETE</h1>
@@ -344,41 +377,62 @@ setTimeout(function(){
       <button class="btn sec" id="btn-endmenu">MAIN MENU</button>
     </div>
   </div>
-</div>
+</div>`;
 
-<script type="module">
-/* =========================================================
-   THE WAR — single-file build
-   Boot is fully resilient: 3D engine loads from a mirror
-   chain with timeouts; any failure shows a visible error.
-   ========================================================= */
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t;
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function genCode(){const c='ABCDEFGHJKMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[Math.random()*c.length|0];return s}
+const SHELL_ROOTS=['hud','main','loadout','settings','mpscreen','pause','end'];
+/* leftovers from the original drone project, in case files got merged */
+const FOREIGN=['startScreen','interface','threeCanvas','gamepad-info','canvas'];
 
-/* ---------- boot UI + fail-safe ---------- */
-const BOOTFILL=$('#bootfill'), BOOTMSG=$('#bootmsg');
-function bootStep(pct,msg){BOOTFILL.style.width=pct+'%';if(msg)BOOTMSG.textContent=msg}
-function bootFail(msg){
-  window.__THEWAR_STATE__='fail';
-  BOOTFILL.style.width='100%';BOOTFILL.style.background='#b23c2e';
-  BOOTMSG.textContent=msg;BOOTMSG.style.color='#b23c2e';BOOTMSG.style.letterSpacing='.12em';
-  const b=document.createElement('button');
-  b.className='btn';b.textContent='RETRY';b.style.marginTop='20px';
-  b.onclick=()=>location.reload();
-  document.querySelector('.bootbox').appendChild(b);
+function ensureCanvas(){
+  if(!document.getElementById('gl')){
+    const c=document.createElement('canvas');c.id='gl';document.body.prepend(c);
+    console.warn('[THE WAR] #gl was missing — created it');
+  }
 }
-/* any uncaught error during boot becomes a visible message, never a silent hang */
-addEventListener('error',e=>{if(!window.__THEWAR_STATE__)bootFail('ERROR: '+(e.message||'unknown'))});
-addEventListener('unhandledrejection',e=>{if(!window.__THEWAR_STATE__)bootFail('ERROR: '+((e.reason&&e.reason.message)||'rejected promise'))});
-function withTimeout(p,ms,label){
-  return Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout '+label)),ms))]);
+function ensureBoot(){
+  if(document.getElementById('boot')&&document.getElementById('bootfill')&&document.getElementById('bootmsg'))return;
+  const old=document.getElementById('boot');if(old)old.remove();
+  document.body.insertAdjacentHTML('beforeend',
+    '<div id="boot" class="screen"><div class="bootbox"><h1>THE <b>WAR</b></h1>'+
+    '<div class="bootbar"><i id="bootfill"></i></div><p id="bootmsg">INITIALIZING COMBAT SYSTEMS</p></div></div>');
 }
+function injectShell(){
+  const replaced=[];
+  for(const id of [...SHELL_ROOTS,...FOREIGN]){
+    const e=document.getElementById(id);
+    if(e){e.remove();replaced.push(id)}
+  }
+  document.body.insertAdjacentHTML('beforeend',SHELL);
+  if(replaced.length)console.warn('[THE WAR] rebuilt UI shell (replaced stale elements: '+replaced.join(', ')+')');
+}
+const NEED=['gl','boot','bootfill','bootmsg',
+  'hud','compass','objective','radar','killfeed','crosshair','hitmarker','hpbox','hpbar','hpnum',
+  'ammobox','ammolab','ammomag','ammores','reloadhint','heatwrap','heatbar','heatlab','chasemeta',
+  'vign','banner','toasts','prompt','downoverlay','scopeovl','nettag',
+  'main','modenav','brieftitle','briefbody','stat-net','stat-gp','stat-q','stat-name',
+  'loadout','partsrows','partstats',
+  'settings','setback','customtag','presetseg','i-scale','v-scale','i-dist','v-dist','i-shadows','i-radar','i-fxlight',
+  'i-fov','v-fov','i-sens','v-sens','i-inv','i-range','v-range','i-dead','v-dead','i-resp','v-resp',
+  'i-gpsens','v-gpsens','stickviz','i-name','i-vol','v-vol',
+  'mpscreen','mp-name','mp-host','mp-code','mp-join','mp-note','mp-status','lobby','mp-roomcode','mp-mode','mp-roster','mp-deploy',
+  'pause','pausesub','btn-resume','btn-pauseset','btn-quit',
+  'end','endtitle','endsub','endstats','btn-redeploy','btn-endmenu'];
 
-/* ---------- resilient three.js loader (no import map, mirrors + timeouts) ---------- */
+/* build the interface BEFORE loading anything async */
+ensureCanvas();ensureBoot();injectShell();
+const MISSING_UI=NEED.filter(id=>!document.getElementById(id));
+if(MISSING_UI.length){
+  bootFail('UI INCOMPLETE: MISSING '+MISSING_UI.join(', ')+' — THE SCRIPT ITSELF WAS TRUNCATED; RE-COPY THE WHOLE FILE');
+  throw new Error('UI incomplete: '+MISSING_UI.join(','));
+}
+/* null-safe setters — a missing element logs a warning, never a crash */
+const setv=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v;else console.warn('[THE WAR] missing #'+id)};
+const setc=(id,v)=>{const e=document.getElementById(id);if(e)e.checked=v;else console.warn('[THE WAR] missing #'+id)};
+const sett=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;else console.warn('[THE WAR] missing #'+id)};
+
+/* ---------- resilient three.js loader (mirrors + timeouts) ---------- */
 const THREE_URLS=[
-  './three.module.js',                                              // local copy → fully offline (serve via local server)
+  './three.module.js',
   'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js',
   'https://unpkg.com/three@0.160.1/build/three.module.js',
   'https://esm.sh/three@0.160.1',
@@ -506,7 +560,6 @@ sun.shadow.bias=-.0004;
 scene.add(sun);scene.add(sun.target);
 scene.add(new THREE.HemisphereLight(0x6a6472,0x2a2620,.55));
 
-/* sky dome + sun disk follow the camera */
 const skyGroup=new THREE.Group();
 {
   const c=document.createElement('canvas');c.width=16;c.height=256;
@@ -547,7 +600,7 @@ function softTex(){
 const TEX_SOFT=softTex();
 
 /* ================= WORLD ================= */
-let worldGroup=null, solids=[], smokePlanes=[], roadProps=null;
+let worldGroup=null, solids=[], smokePlanes=[], roadProps=null, roadJeep=null;
 const WORLD_R=430;
 function groundTex(){
   const c=document.createElement('canvas');c.width=c.height=256;
@@ -569,7 +622,7 @@ const GROUND_TEX=groundTex();
 function buildWorld(seed){
   if(worldGroup){scene.remove(worldGroup)}
   worldGroup=new THREE.Group();scene.add(worldGroup);
-  solids=[];smokePlanes=[];roadProps=null;
+  solids=[];smokePlanes=[];roadProps=null;roadJeep=null;
   const rng=mulberry32(seed);
   const density=clamp(S.viewDist/300,.45,1.25);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(1000,1000),
@@ -662,7 +715,6 @@ function makeCamps(rng){
 }
 
 /* ================= ROAD WORLD (car chase) ================= */
-let roadJeep=null;
 function buildRoadWorld(){
   if(worldGroup)scene.remove(worldGroup);
   worldGroup=new THREE.Group();scene.add(worldGroup);
@@ -1260,8 +1312,8 @@ let ammo=30,reserve=240,reloadT=0,fireCd=0;
 function resetWeapon(){
   ST=weaponStats();
   ammo=ST.mag;reserve=ST.reserve;reloadT=0;fireCd=0;bloom=0;
-  $('#ammolab').textContent=mode==='chase'?'M2 · LINKED BELT':'5.56 RIFLE';
-  $('#ammores').textContent=mode==='chase'?'∞':'/ '+ST.reserve;
+  sett('ammolab',mode==='chase'?'M2 · LINKED BELT':'5.56 RIFLE');
+  sett('ammores',mode==='chase'?'∞':'/ '+ST.reserve);
 }
 const _dir=V3(),_o=V3(),_mz=V3();
 function updatePlayer(dt){
@@ -1885,26 +1937,26 @@ function refreshPartStats(){
 }
 
 function refreshSettings(){
-  $('#i-name').value=S.name;
+  setv('i-name',S.name);
   for(const [i,p] of [['i-scale','renderScale',100],['i-dist','viewDist',1],['i-fov','fov',1],['i-sens','sens',1],
     ['i-range','stickRange',1],['i-dead','deadzone',1],['i-resp','response',1],['i-gpsens','gpSens',1],['i-vol','vol',1]])
-    $(i).value=Math.round(S[p]*(i==='i-scale'?100:1));
-  $('#i-shadows').checked=S.shadows;
-  $('#i-radar').checked=S.radar;
-  $('#i-fxlight').checked=S.fxLight;
-  $('#i-inv').checked=S.invY;
+    setv(i,Math.round(S[p]*(i==='i-scale'?100:1)));
+  setc('i-shadows',S.shadows);
+  setc('i-radar',S.radar);
+  setc('i-fxlight',S.fxLight);
+  setc('i-inv',S.invY);
   updateSetLabels();checkCustom();
 }
 function updateSetLabels(){
-  $('#v-scale').textContent=Math.round(S.renderScale*100)+'%';
-  $('#v-dist').textContent=S.viewDist+' M';
-  $('#v-fov').textContent=S.fov+'°';
-  $('#v-sens').textContent=S.sens+'%';
-  $('#v-range').textContent=S.stickRange+'%';
-  $('#v-dead').textContent=S.deadzone+'%';
-  $('#v-resp').textContent=(S.response/100).toFixed(1)+'×';
-  $('#v-gpsens').textContent=S.gpSens+'%';
-  $('#v-vol').textContent=S.vol+'%';
+  sett('v-scale',Math.round(S.renderScale*100)+'%');
+  sett('v-dist',S.viewDist+' M');
+  sett('v-fov',S.fov+'°');
+  sett('v-sens',S.sens+'%');
+  sett('v-range',S.stickRange+'%');
+  sett('v-dead',S.deadzone+'%');
+  sett('v-resp',(S.response/100).toFixed(1)+'×');
+  sett('v-gpsens',S.gpSens+'%');
+  sett('v-vol',S.vol+'%');
 }
 function checkCustom(){
   let custom=true;
@@ -1914,7 +1966,7 @@ function checkCustom(){
        pre.radar===S.radar&&pre.fxLight===S.fxLight){S.preset=p;custom=false;break}
   }
   if(custom)S.preset='custom';
-  $('#customtag').textContent=custom?'· CUSTOM':'';
+  sett('customtag',custom?'· CUSTOM':'');
   $$('#presetseg button').forEach(b=>b.classList.toggle('on',b.dataset.p===S.preset));
   updateStatStrip();save();
 }
@@ -1935,7 +1987,7 @@ function drawStickViz(){
   x.fillStyle='rgba(139,136,115,.7)';x.font='10px "Share Tech Mono"';x.textAlign='center';
   x.fillText('NO GAMEPAD',75,140);
 }
-const mpStatus=t=>$('#mp-status').textContent=t;
+const mpStatus=t=>{const e=$('#mp-status');if(e)e.textContent=t};
 function showLobby(){
   $('#lobby').classList.remove('hidden');
   $('#mp-roomcode').textContent=NET.code;
@@ -1953,12 +2005,12 @@ function updateLobbyUI(){
   $('#mp-roster').innerHTML=rows.join('')||'<div style="color:var(--dim)">NO ROOM</div>';
 }
 function updateStatStrip(){
-  $('#stat-q').textContent='QUALITY: '+(S.preset||'custom').toUpperCase();
-  $('#stat-name').textContent='OPERATOR: '+(S.name||'SOLDIER').toUpperCase();
-  $('#stat-gp').textContent='GAMEPAD: '+(gpIndex>=0?'CONNECTED':'—');
-  $('#stat-gp').classList.toggle('on',gpIndex>=0);
-  $('#stat-net').textContent=NET.peer?(NET.isHost?`NET: HOST · ${NET.code}`:`NET: P2P · ${NET.code}`):'NET: OFFLINE';
-  $('#stat-net').classList.toggle('on',!!NET.peer);
+  sett('stat-q','QUALITY: '+(S.preset||'custom').toUpperCase());
+  sett('stat-name','OPERATOR: '+(S.name||'SOLDIER').toUpperCase());
+  sett('stat-gp','GAMEPAD: '+(gpIndex>=0?'CONNECTED':'—'));
+  const g=$('#stat-gp');if(g)g.classList.toggle('on',gpIndex>=0);
+  sett('stat-net',NET.peer?(NET.isHost?`NET: HOST · ${NET.code}`:`NET: P2P · ${NET.code}`):'NET: OFFLINE');
+  const n=$('#stat-net');if(n)n.classList.toggle('on',!!NET.peer);
 }
 
 /* ================= QUALITY ================= */
@@ -2048,8 +2100,9 @@ try{
     refreshSettings();applyQuality();sfxUI();
   }));
   const bindRange=(inp,key,scale,cb)=>{
-    $(inp).addEventListener('input',()=>{
-      S[key]=$(inp).value/scale;
+    const el=$(inp);if(!el)return;
+    el.addEventListener('input',()=>{
+      S[key]=el.value/scale;
       updateSetLabels();applyQuality();checkCustom();
       if(cb)cb();
     });
@@ -2128,8 +2181,8 @@ try{
     showScreen('#main');updateStatStrip();
   },350);
 }catch(err){
-  console.error(err);
-  bootFail('STARTUP ERROR: '+((err&&err.message)||err));
+  console.error('[THE WAR] startup error:',err);
+  bootFail('STARTUP ERROR: '+((err&&err.message)||err)+' — PRESS F12 FOR DETAILS');
 }
 </script>
 </body>
